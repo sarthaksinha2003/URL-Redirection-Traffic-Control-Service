@@ -7,12 +7,14 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.Date;
 import java.util.stream.Collectors;
 
+@Component
 public class JwtUtils {
 
     @Value("${jwt.secret}")
@@ -21,6 +23,7 @@ public class JwtUtils {
     @Value("${jwt.expiration}")
     private int jwtExpirationMs;
 
+    // Extract token
     //Authorization --> Bearer <TOKEN>
     public String getJwtFromHeader(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
@@ -30,6 +33,7 @@ public class JwtUtils {
         return null;
     }
 
+    // Generate token
     // roles and username will be embedded so that is why I am using UserDetailsImpl
     public String generateToken(UserDetailsImpl userDetails) {
         String username = userDetails.getUsername();
@@ -52,6 +56,7 @@ public class JwtUtils {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
     }
 
+    // Validate token
     public boolean validateToken(String authToken) {
         try {
             Jwts.parser().verifyWith((SecretKey) key()).build().parseSignedClaims(authToken);

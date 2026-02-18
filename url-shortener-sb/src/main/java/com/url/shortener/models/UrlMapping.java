@@ -17,10 +17,12 @@ public class UrlMapping {
     private int clickCount;
     private LocalDateTime createdDate;
 
+    //One user can create many short URLs
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
+    //One short URL can have many clicks
     @OneToMany(mappedBy = "urlMapping")
     private List<ClickEvent> clickEvents;
 }
