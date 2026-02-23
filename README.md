@@ -1,187 +1,234 @@
-# 🔗 URL Redirection Traffic Control Service
+# 🔗 URL Shortener Backend API
 
-A scalable URL shortening service built using **Java, Spring Boot, JPA, Redis, MySQL, and Docker**.  
-This system provides secure URL shortening with JWT authentication and distributed rate limiting to prevent abuse.
+A production-ready URL Shortener backend built using Spring Boot, JWT Authentication, PostgreSQL, and Docker.
+
+This backend provides secure URL shortening, public redirection, click tracking, and date-wise analytics.
 
 ---
 
-## 🚀 Tech Stack
+## 🚀 Live Deployment
 
-- Java 17+
+Health Check:
+https://url-shortener-sb-osbl.onrender.com/health
+
+---
+
+## 🛠 Tech Stack
+
+- Java 17
 - Spring Boot
-- Spring Security + JWT
-- Spring Data JPA (Hibernate)
-- MySQL
-- Redis
+- Spring Security (JWT)
+- Spring Data JPA
+- PostgreSQL (Neon DB)
 - Docker
+- Render (Cloud Deployment)
 - Maven
-- Postman (API Testing)
 
 ---
 
-## 🏗 Architecture
+## 🔐 Features
 
-The project follows a layered architecture:
-
-Controller → Service → Repository → Database
-
-- **Controller Layer** – Handles REST APIs
-- **Service Layer** – Business logic
-- **Repository Layer** – Database interaction
-- **Security Layer** – JWT authentication & authorization
-- **Redis Layer** – Rate limiting & caching
-
----
-
-## ✨ Features
-
-- 🔐 JWT-based Authentication (Login & Register)
-- 🔗 Base62 URL Shortening
-- ⚡ Sliding Window Rate Limiting (Redis-backed)
-- 📊 Click Tracking Support
-- 🛡 Role-based Authorization (ROLE_USER)
-- 🐳 Dockerized Deployment
-- 📦 Clean Layered Architecture
+- User Registration
+- User Login with JWT Token
+- Secure API Endpoints
+- Short URL Generation
+- Public URL Redirection
+- Click Tracking
+- Date-wise Analytics
+- Total Click Aggregation
+- Dockerized Deployment
+- Public Health Endpoint
 
 ---
 
 ## 📌 API Endpoints
 
-### 🔐 Authentication APIs
+### 🔓 Public Endpoints
 
-**Register User**
-```
-POST /api/auth/public/register
-```
+1️⃣ Register User  
+POST `/api/auth/public/register`
 
-**Login User**
-```
-POST /api/auth/public/login
-```
+Request Body:
+{
+"username": "john_doe",
+"email": "john@example.com",
+"password": "password123"
+}
 
----
-
-### 🔗 URL APIs
-
-**Create Short URL**
-```
-POST /api/url/create
-```
-
-**Redirect to Original URL**
-```
-GET /{shortCode}
-```
+Response:
+User Registered Successfully
 
 ---
 
-## ⚡ Rate Limiting Implementation
+2️⃣ Login User  
+POST `/api/auth/public/login`
 
-Implemented a **Sliding Window Rate Limiting algorithm** using Redis.
+Request Body:
+{
+"username": "john_doe",
+"password": "password123"
+}
 
-- Tracks requests per user/IP
-- Prevents abuse attacks
-- Distributed-safe (works across multiple instances)
-- Optimized request validation using Redis sorted sets
-
-This ensures high performance while protecting backend resources.
+Response:
+{
+"token": "JWT_TOKEN_HERE"
+}
 
 ---
 
-## 🗄 Database Design
+3️⃣ Public URL Redirect  
+GET `/{shortUrl}`
 
-### User Table
+Example:
+https://url-shortener-sb-osbl.onrender.com/Np06EhXk
+
+Redirects to original URL and records click event.
+
+---
+
+4️⃣ Health Check  
+GET `/health`
+
+Response:
+{
+"status": "UP",
+"message": "Backend API is running successfully",
+"service": "URL Shortener Backend API",
+"authentication": "JWT Enabled",
+"features": "URL Shortening, Redirect, Analytics",
+"author": "Sarthak Sinha",
+"timestamp": "2026-02-24T05:02:41"
+}
+
+---
+
+## 🔐 Protected Endpoints (Require JWT)
+
+All protected APIs require:
+
+Authorization: Bearer <JWT_TOKEN>
+
+---
+
+1️⃣ Create Short URL  
+POST `/api/urls/shorten`
+
+Request Body:
+{
+"originalUrl": "https://google.com"
+}
+
+Response:
+{
+"id": 3,
+"shortUrl": "Np06EhXk",
+"originalUrl": "https://google.com",
+"clickCount": 0,
+"createdDate": "2026-02-24T03:18:51",
+"username": "john_doe"
+}
+
+---
+
+2️⃣ Get User URLs  
+GET `/api/urls/myurls`
+
+Returns all URLs created by logged-in user.
+
+---
+
+3️⃣ Get URL Analytics  
+GET `/api/urls/analytics/{shortUrl}?startDate=YYYY-MM-DDTHH:MM:SS&endDate=YYYY-MM-DDTHH:MM:SS`
+
+Example:
+/api/urls/analytics/Np06EhXk?startDate=2026-02-23T00:00:00&endDate=2026-02-23T23:59:59
+
+Response:
+[
+{
+"clickDate": "2026-02-23",
+"count": 2
+}
+]
+
+---
+
+4️⃣ Get Total Clicks By Date  
+GET `/api/urls/totalClicks?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
+
+Example:
+/api/urls/totalClicks?startDate=2026-02-23&endDate=2026-02-24
+
+Response:
+{
+"2026-02-23": 2,
+"2026-02-24": 1
+}
+
+---
+
+## 🗄 Database Schema
+
+User
 - id
 - username
 - email
 - password
 - role
 
-### URL Mapping Table
+UrlMapping
 - id
 - originalUrl
-- shortCode
-- userId
-- createdAt
+- shortUrl
+- clickCount
+- createdDate
+- user_id (FK)
 
-### Click Event Table
+ClickEvent
 - id
-- urlId
-- timestamp
-- ipAddress
+- clickDate
+- url_mapping_id (FK)
 
 ---
 
-## 🔐 Security
+## 🐳 Docker Commands
 
-- Password encryption using BCrypt
-- JWT token-based authentication
-- Stateless session management
-- Protected endpoints for authenticated users
+Build Image:
+docker build -t url-shortener-sb .
 
----
+Tag Image:
+docker tag url-shortener-sb sarthaksinha2003/url-shortener-sb:latest
 
-## 🛠 How to Run Locally
-
-### 1️⃣ Clone the Repository
-```
-git clone https://github.com/your-username/url-shortener.git
-cd url-shortener
-```
-
-### 2️⃣ Configure MySQL
-Update `application.properties`:
-
-```
-spring.datasource.url=jdbc:mysql://localhost:3306/url_shortener
-spring.datasource.username=root
-spring.datasource.password=yourpassword
-```
-
-### 3️⃣ Start Redis
-Make sure Redis is running locally:
-```
-redis-server
-```
-
-### 4️⃣ Run the Application
-```
-mvn spring-boot:run
-```
-
-Application will start at:
-```
-http://localhost:8080
-```
+Push to Docker Hub:
+docker push sarthaksinha2003/url-shortener-sb:latest
 
 ---
 
-## 🐳 Run with Docker (Optional)
+## 🧠 Architecture
 
-```
-docker-compose up --build
-```
+Controller Layer → REST APIs  
+Service Layer → Business Logic  
+Repository Layer → Database Access  
+JWT Filter → Authentication & Authorization  
+ClickEvent Table → Analytics Tracking
 
 ---
 
 ## 📈 Future Improvements
 
-- URL expiration feature
-- Custom short codes
-- Analytics dashboard
-- Geo-based click tracking
-- Monitoring using Prometheus & Grafana
+- Redis Caching
+- Rate Limiting
+- Swagger Documentation
+- Microservices Architecture
+- CI/CD Pipeline
 
 ---
 
 ## 👨‍💻 Author
 
 Sarthak Sinha  
-B.Tech | Backend Developer  
-Passionate about scalable system design & distributed systems.
+Backend Developer | Java | Spring Boot
 
 ---
 
-## 📜 License
-
-This project is for educational and learning purposes.
+⭐ If you like this project, feel free to star the repository!
