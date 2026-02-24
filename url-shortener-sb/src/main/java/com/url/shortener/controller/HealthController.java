@@ -20,7 +20,7 @@ public class HealthController {
                         "authentication", "JWT Enabled",
                         "features", "URL Shortening, Redirect, Analytics",
                         "author", "Sarthak Sinha",
-                        "github", "https://github.com/your-username/url-shortener-sb",
+                        "github", "https://github.com/sarthaksinha2003/URL-Redirection-Traffic-Control-Service",
                         "timestamp", LocalDateTime.now()
                 )
         );
