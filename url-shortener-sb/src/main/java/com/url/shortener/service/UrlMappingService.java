@@ -7,6 +7,7 @@ import com.url.shortener.models.UrlMapping;
 import com.url.shortener.models.User;
 import com.url.shortener.repository.ClickEventRepository;
 import com.url.shortener.repository.UrlMappingRepository;
+import com.url.shortener.utils.Base62Encoder;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,14 +24,31 @@ public class UrlMappingService {
     private UrlMappingRepository urlMappingRepository;
     private ClickEventRepository clickEventRepository;
     public UrlMappingDTO creatShortUrl(String originalUrl, User user) {
-        String shortUrl = generateShortUrl();
+        // STEP 1: Save to DB first with placeholder to get the auto-generated ID
         UrlMapping urlMapping = new UrlMapping();
         urlMapping.setOriginalUrl(originalUrl);
-        urlMapping.setShortUrl(shortUrl);
+        urlMapping.setShortUrl("PENDING"); // temporary value
         urlMapping.setUser(user);
         urlMapping.setCreatedDate(LocalDateTime.now());
         UrlMapping savedUrlMapping = urlMappingRepository.save(urlMapping);
-        return convertToDTO(savedUrlMapping);
+
+        // STEP 2: Use the DB ID to generate a guaranteed unique Base62 short URL
+        // e.g., ID 1 → "1", ID 62 → "Z", ID 10042 → "2bQ"
+        String shortUrl = Base62Encoder.encode(savedUrlMapping.getId());
+
+        // STEP 3: Collision detection — while loop keeps trying if collision found
+        // In practice this almost NEVER runs because DB ID is always unique
+        long offset = 0;
+        while (urlMappingRepository.existsByShortUrl(shortUrl)) {
+            offset++;
+            // Shift the ID far away to get a completely different Base62 string
+            shortUrl = Base62Encoder.encode(savedUrlMapping.getId() + offset * 1_000_000_000L);
+        }
+
+        // STEP 4: Update the record with the real short URL and save
+        savedUrlMapping.setShortUrl(shortUrl);
+        UrlMapping finalMapping = urlMappingRepository.save(savedUrlMapping);
+        return convertToDTO(finalMapping);
     }
 
     private UrlMappingDTO convertToDTO(UrlMapping urlMapping){
@@ -44,15 +62,15 @@ public class UrlMappingService {
         return urlMappingDTO;
     }
 
-    private String generateShortUrl() {
-        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        Random random = new Random();
-        StringBuilder shortUrl = new StringBuilder(8);
-        for (int i = 0; i < 8; i++) {
-            shortUrl.append(characters.charAt(random.nextInt(characters.length())));
-        }
-        return shortUrl.toString();
-    }
+//    private String generateShortUrl() {
+//        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+//        Random random = new Random();
+//        StringBuilder shortUrl = new StringBuilder(8);
+//        for (int i = 0; i < 8; i++) {
+//            shortUrl.append(characters.charAt(random.nextInt(characters.length())));
+//        }
+//        return shortUrl.toString();
+//    }
 
     public List<UrlMappingDTO> getUrlsByUser(User user) {
         return urlMappingRepository.findByUser(user).stream().map(this::convertToDTO).toList();
