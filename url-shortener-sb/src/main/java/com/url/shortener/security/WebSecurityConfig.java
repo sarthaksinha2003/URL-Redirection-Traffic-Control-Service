@@ -5,6 +5,7 @@ import com.url.shortener.service.UserDetailsServiceImpl;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import com.url.shortener.ratelimit.RateLimitFilter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -23,6 +24,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @AllArgsConstructor
 public class WebSecurityConfig {
     private UserDetailsServiceImpl userDetailsService;
+    private RateLimitFilter rateLimitFilter;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
@@ -54,13 +56,15 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll()
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/urls/**").authenticated()
                         .requestMatchers("/{shortUrl}").permitAll()
                         .requestMatchers("/health").permitAll()
                         .anyRequest().authenticated()
                 );
         http.authenticationProvider(authenticationProvider());
+        http.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
