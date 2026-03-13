@@ -20,6 +20,8 @@ https://url-shortener-sb-osbl.onrender.com/health
 - Spring Security (JWT)
 - Spring Data JPA
 - PostgreSQL (Neon DB)
+- Redis (Rate Limiting)
+- Spring Data Redis
 - Docker
 - Render (Cloud Deployment)
 - Maven
@@ -36,6 +38,7 @@ https://url-shortener-sb-osbl.onrender.com/health
 - Click Tracking
 - Date-wise Analytics
 - Total Click Aggregation
+- IP-based Rate Limiting (Redis sliding window, **100 requests per IP per 60 seconds** on auth, shorten, and redirect endpoints)
 - Dockerized Deployment
 - Public Health Endpoint
 
@@ -211,14 +214,37 @@ Service Layer → Business Logic
 Repository Layer → Database Access  
 JWT Filter → Authentication & Authorization  
 ClickEvent Table → Analytics Tracking
+RateLimit Filter + Redis → Per-IP Rate Limiting
+
+---
+
+## 📊 Load & Reliability Testing
+
+- Validated using **Apache JMeter** with **1000+ URL creation and redirect requests**
+- **No short URL collisions** observed during tests
+- **Rate limiting** correctly enforced (HTTP 429) under high request bursts
+
+---
+
+## ⚙️ Configuration & Environment
+
+The service is configured via environment variables (used in `application.properties`):
+
+- `DATABASE_URL`
+- `DATABASE_USERNAME`
+- `DATABASE_PASSWORD`
+- `DATABASE_DIALECT`
+- `JWT_SECRET`
+- `REDIS_URL`
+
+Make sure these are set in your local `.env`, Docker environment, or Render dashboard before running the application.
 
 ---
 
 ## 📈 Future Improvements
 
-- Redis Caching
-- Rate Limiting
-- Swagger Documentation
+- Distributed Caching Layer (beyond current Redis usage)
+- Swagger / OpenAPI Documentation
 - Microservices Architecture
 - CI/CD Pipeline
 
